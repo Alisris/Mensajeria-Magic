@@ -7,6 +7,6 @@ function sendText() {
     return;
   }
 
-  // Redirigir a Proyecto 2 con el texto como parámetro en la URL
-  window.location.href = `https://mi-sitio2.com/index.html?text=${encodeURIComponent(textInput)}`;
-}
+ // Redirigir a Proyecto 2 con el texto como parámetro en la URL
+      window.location.href = `https://alisris.github.io/Mensajero-Magic/index.html?text=${encodeURIComponent(textInput)}`;
+    }
