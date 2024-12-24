@@ -1,46 +1,182 @@
-<!-- Proyecto 1: Enviar Texto -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyecto 1 - Enviar Texto</title>
+  <title>Creador</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    input[type="text"], button { padding: 10px; margin: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #chat {
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 5px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+    #emoji-picker {
+      font-size: 20px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    #emoji-list {
+      display: none;
+      position: absolute;
+      border: 1px solid #ccc;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 5px;
+      z-index: 1;
+    }
+    .emoji {
+      font-size: 20px;
+      cursor: pointer;
+      padding: 5px;
+    }
+    .message {
+      margin: 5px 0;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .delete-btn {
+      cursor: pointer;
+      color: red;
+      font-size: 14px;
+    }
+    .sent-message {
+      background-color: #f9fce7; /* Color de fondo para mensajes enviados */
+    }
+    .received-message {
+      background-color: #e7f3ff; /* Color de fondo para mensajes recibidos */
+    }
   </style>
 </head>
 <body>
-  <h1>Enviar Texto a Proyecto 2</h1>
-  <input type="text" id="text-input" placeholder="Escribe algo..." />
-  <button onclick="sendText()">Enviar Texto</button>
-
-  <h3>Texto recibido en Proyecto 1:</h3>
-  <div id="received-text"></div>
+  <h1>Creador</h1>
+  <div id="chat"></div>
+  <input type="text" id="message" placeholder="Escribe un mensaje...">
+  <button onclick="sendMessage()">Enviar</button>
+  <span id="emoji-picker">😊</span>
+  <div id="emoji-list">
+    <span class="emoji" onclick="addEmoji('😊')">😊</span>
+    <span class="emoji" onclick="addEmoji('😂')">😂</span>
+    <span class="emoji" onclick="addEmoji('😍')">😍</span>
+    <span class="emoji" onclick="addEmoji('😢')">😢</span>
+    <span class="emoji" onclick="addEmoji('😎')">😎</span>
+    <span class="emoji" onclick="addEmoji('👍')">👍</span>
+    <span class="emoji" onclick="addEmoji('👋')">👋</span>
+    <span class="emoji" onclick="addEmoji('❤️')">❤️</span>
+  </div>
 
   <script>
-    // Conectar al servidor WebSocket
+    // Conectar con el servidor WebSocket
     const socket = new WebSocket('ws://localhost:8080');
+    const chat = document.getElementById('chat');
+    const messageInput = document.getElementById('message');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const emojiList = document.getElementById('emoji-list');
 
-    socket.onopen = () => {
-      console.log('Conectado al servidor WebSocket');
+    emojiPicker.onclick = () => {
+      emojiList.style.display = emojiList.style.display === 'block' ? 'none' : 'block';
     };
 
-    // Función para enviar el texto
-    function sendText() {
-      const textInput = document.getElementById('text-input').value;
-      if (textInput.trim() === "") {
-        alert("Por favor, escribe algo antes de enviar.");
-        return;
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      displayMessage(message.text, message.timestamp, message.id, 'received');
+    };
+
+    function sendMessage() {
+      const message = messageInput.value;
+      if (message) {
+        const timestamp = new Date().toLocaleString();
+        const messageObj = {
+          text: message,
+          timestamp: timestamp,
+          id: Date.now(),
+          type: 'sent'
+        };
+        socket.send(JSON.stringify(messageObj));
+        messageInput.value = '';
+
+        saveMessageToLocalStorage(messageObj);
+        displayMessage(messageObj.text, messageObj.timestamp, messageObj.id, messageObj.type);
       }
-      socket.send(textInput); // Enviar el texto al servidor WebSocket
     }
 
-    // Recibir mensajes del servidor
-    socket.onmessage = (event) => {
-      const receivedText = event.data;
-      document.getElementById('received-text').innerHTML = `<p><strong>Texto recibido:</strong> ${receivedText}</p>`;
-    };
+    function addEmoji(emoji) {
+      messageInput.value += emoji;
+      emojiList.style.display = 'none';
+    }
+
+    function displayMessage(text, timestamp, id, type) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.classList.add(type === 'sent' ? 'sent-message' : 'received-message');
+      messageDiv.id = id;
+
+      const messageContent = document.createElement('span');
+      messageContent.textContent = `${timestamp} - ${text}`;
+
+      const deleteBtn = document.createElement('span');
+      deleteBtn.textContent = 'Eliminar para mí';
+      deleteBtn.classList.add('delete-btn');
+      deleteBtn.onclick = () => deleteMessage(id, 'mine');
+
+      const deleteAllBtn = document.createElement('span');
+      deleteAllBtn.textContent = 'Eliminar para todos';
+      deleteAllBtn.classList.add('delete-btn');
+      deleteAllBtn.onclick = () => deleteMessage(id, 'all');
+
+      messageDiv.appendChild(messageContent);
+      messageDiv.appendChild(deleteBtn);
+      messageDiv.appendChild(deleteAllBtn);
+      chat.appendChild(messageDiv);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function deleteMessage(id, type) {
+      if (type === 'mine') {
+        const messageDiv = document.getElementById(id);
+        messageDiv.remove();
+        removeMessageFromLocalStorage(id);
+      } else if (type === 'all') {
+        const messageDiv = document.getElementById(id);
+        messageDiv.remove();
+        socket.send(JSON.stringify({ action: 'delete', id: id }));
+      }
+    }
+
+    function saveMessageToLocalStorage(messageObj) {
+      let messages = JSON.parse(localStorage.getItem('messages')) || [];
+      messages.push(messageObj);
+      localStorage.setItem('messages', JSON.stringify(messages));
+    }
+
+    function removeMessageFromLocalStorage(id) {
+      let messages = JSON.parse(localStorage.getItem('messages')) || [];
+      messages = messages.filter(message => message.id !== id);
+      localStorage.setItem('messages', JSON.stringify(messages));
+    }
+
+    function loadMessagesFromLocalStorage() {
+      let messages = JSON.parse(localStorage.getItem('messages')) || [];
+      messages.forEach(message => {
+        displayMessage(message.text, message.timestamp, message.id, message.type);
+      });
+    }
+
+    window.onload = loadMessagesFromLocalStorage;
   </script>
 </body>
 </html>
