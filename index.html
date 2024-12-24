@@ -1,3 +1,4 @@
+<!-- Proyecto 1: Enviar Texto -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,69 +6,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyecto 1 - Enviar Texto</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f7f7f7;
-    }
-
-    .container {
-      text-align: center;
-      padding: 20px;
-      background-color: white;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-
-    input[type="text"] {
-      padding: 10px;
-      margin-bottom: 10px;
-      width: 250px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
+    body { font-family: Arial, sans-serif; }
+    input[type="text"], button { padding: 10px; margin: 10px; }
   </style>
 </head>
 <body>
+  <h1>Enviar Texto a Proyecto 2</h1>
+  <input type="text" id="text-input" placeholder="Escribe algo..." />
+  <button onclick="sendText()">Enviar Texto</button>
 
-  <div class="container">
-    <h1>Enviar Texto a Proyecto 2</h1>
-    <input type="text" id="text-input" placeholder="Escribe algo..." />
-    <br />
-    <button onclick="sendText()">Enviar Texto</button>
-  </div>
+  <h3>Texto recibido en Proyecto 1:</h3>
+  <div id="received-text"></div>
 
   <script>
+    // Conectar al servidor WebSocket
+    const socket = new WebSocket('ws://localhost:8080');
+
+    socket.onopen = () => {
+      console.log('Conectado al servidor WebSocket');
+    };
+
+    // Función para enviar el texto
     function sendText() {
       const textInput = document.getElementById('text-input').value;
-
-      // Verificar si el campo de texto está vacío
       if (textInput.trim() === "") {
         alert("Por favor, escribe algo antes de enviar.");
         return;
       }
-
-      // Redirigir a Proyecto 2 con el texto como parámetro en la URL
-      window.location.href = `https://alisris.github.io/Mensajero-Magic/index.html?text=${encodeURIComponent(textInput)}`;
+      socket.send(textInput); // Enviar el texto al servidor WebSocket
     }
+
+    // Recibir mensajes del servidor
+    socket.onmessage = (event) => {
+      const receivedText = event.data;
+      document.getElementById('received-text').innerHTML = `<p><strong>Texto recibido:</strong> ${receivedText}</p>`;
+    };
   </script>
 </body>
 </html>
