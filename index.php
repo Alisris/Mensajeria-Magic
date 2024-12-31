@@ -21,9 +21,15 @@
         <button type="submit">Enviar Mensaje</button>
     </form>
 
+    <br>
+
+    <!-- Botón para guardar los mensajes en un archivo de texto -->
+    <button id="downloadBtn" style="display: none;">Descargar Conversación</button>
+
     <script>
         // Obtener el contenedor de la conversación
         const conversationDiv = document.getElementById('conversation');
+        const downloadBtn = document.getElementById('downloadBtn');
 
         // Función para cargar los mensajes desde localStorage
         function loadMessages() {
@@ -34,6 +40,9 @@
                 messageDiv.textContent = `${msg.timestamp} - ${msg.message}`;
                 conversationDiv.appendChild(messageDiv);
             });
+
+            // Mostrar el botón de descarga si hay mensajes
+            downloadBtn.style.display = messages.length > 0 ? 'inline' : 'none';
         }
 
         // Función para guardar el mensaje en localStorage
@@ -42,6 +51,19 @@
             const timestamp = new Date().toLocaleString();
             messages.push({ timestamp, message });
             localStorage.setItem('messages', JSON.stringify(messages));
+        }
+
+        // Función para descargar los mensajes como un archivo
+        function downloadMessages() {
+            const messages = JSON.parse(localStorage.getItem('messages')) || [];
+            const content = messages.map(msg => `${msg.timestamp} - ${msg.message}`).join("\n");
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mensajeria/mensajes_conversacion.txt';  // Nombre del archivo a descargar
+            a.click();
+            URL.revokeObjectURL(url);  // Revocar el objeto URL después de usarlo
         }
 
         // Manejar el envío del formulario
@@ -53,6 +75,11 @@
                 loadMessages();  // Recargar los mensajes
                 document.getElementById('mensaje').value = '';  // Limpiar el textarea
             }
+        });
+
+        // Manejar el clic en el botón de descarga
+        downloadBtn.addEventListener('click', function() {
+            downloadMessages();  // Descargar los mensajes como archivo
         });
 
         // Cargar los mensajes cuando la página se recarga
