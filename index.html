@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mensajería</title>
+    <title>Mensajería Global (Sin servidor)</title>
 </head>
 <body>
-    <h1>Mensajería</h1>
+    <h1>Mensajería Global</h1>
 
     <!-- Formulario para enviar el mensaje -->
     <form id="mensajeForm">
@@ -54,13 +54,23 @@
                 const mensajeConFecha = `${fecha.toLocaleString()} - ${mensaje}\n`;
                 mensajesGuardados += mensajeConFecha;
 
-                // Guardar los mensajes actualizados
+                // Guardar los mensajes actualizados en localStorage
                 localStorage.setItem('mensajes', mensajesGuardados);
 
                 // Limpiar el textarea
                 document.getElementById('mensaje').value = '';
 
                 // Actualizar la vista de los mensajes
+                mostrarMensajes();
+
+                // Disparar el evento de cambio para que se sincronicen las otras pestañas
+                window.dispatchEvent(new Event('storage'));
+            }
+        });
+
+        // Escuchar los cambios en el localStorage y actualizar la interfaz cuando otras pestañas cambian
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'mensajes') {
                 mostrarMensajes();
             }
         });
